@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vengeance Clock Pro</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #020617;
+  --card: rgba(255,255,255,0.05);
+  --text: #e2e8f0;
+  --accent: #38bdf8;
+}
+
+.light {
+  --bg: #f1f5f9;
+  --card: rgba(0,0,0,0.05);
+  --text: #020617;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  transition: 0.4s;
+}
+
+.container {
+  padding: 30px;
+  border-radius: 20px;
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  text-align: center;
+  width: 320px;
+}
+
+/* SVG Clock */
+svg {
+  width: 200px;
+  height: 200px;
+}
+
+.hand {
+  transform-origin: 100px 100px;
+  transition: transform 0.05s linear;
+}
+
+.digital {
+  margin-top: 10px;
+  font-size: 22px;
+}
+
+/* Controls */
+select, button {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+/* Stopwatch */
+.section {
+  margin-top: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- CLOCK -->
+<svg viewBox="0 0 200 200">
+  <circle cx="100" cy="100" r="95" stroke="gray" stroke-width="2" fill="none"/>
+
+  <line id="hour" class="hand" x1="100" y1="100" x2="100" y2="60" stroke="white" stroke-width="5"/>
+  <line id="minute" class="hand" x1="100" y1="100" x2="100" y2="40" stroke="white" stroke-width="3"/>
+  <line id="second" class="hand" x1="100" y1="100" x2="100" y2="30" stroke="red" stroke-width="2"/>
+</svg>
+
+<div class="digital" id="digital"></div>
+
+<!-- TIMEZONE -->
+<select id="timezone">
+  <option value="local">Local</option>
+  <option value="UTC">UTC</option>
+  <option value="Asia/Dhaka">Dhaka</option>
+  <option value="America/New_York">New York</option>
+  <option value="Europe/London">London</option>
+</select>
+
+<!-- TOGGLE -->
+<button onclick="toggleTheme()">🌙 Toggle Theme</button>
+
+<!-- STOPWATCH -->
+<div class="section">
+  <h4>Stopwatch</h4>
+  <div id="stopwatch">00:00:00</div>
+  <button onclick="startSW()">Start</button>
+  <button onclick="stopSW()">Stop</button>
+  <button onclick="resetSW()">Reset</button>
+</div>
+
+<!-- TIMER -->
+<div class="section">
+  <h4>Timer (sec)</h4>
+  <input id="timerInput" type="number" placeholder="Enter seconds">
+  <button onclick="startTimer()">Start</button>
+  <div id="timerDisplay"></div>
+</div>
+
+</div>
+
+<script>
+let tz = "local";
+
+/* CLOCK */
+function updateClock() {
+  let now = new Date();
+
+  if (tz !== "local") {
+    now = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
+  }
+
+  const sec = now.getSeconds();
+  const min = now.getMinutes();
+  const hr = now.getHours();
+
+  const secDeg = sec * 6;
+  const minDeg = min * 6;
+  const hrDeg = hr * 30 + min * 0.5;
+
+  document.getElementById("second").setAttribute("transform", `rotate(${secDeg} 100 100)`);
+  document.getElementById("minute").setAttribute("transform", `rotate(${minDeg} 100 100)`);
+  document.getElementById("hour").setAttribute("transform", `rotate(${hrDeg} 100 100)`);
+
+  document.getElementById("digital").innerText = now.toLocaleTimeString();
+
+  tickSound();
+}
+
+setInterval(updateClock, 1000);
+
+/* TIMEZONE */
+document.getElementById("timezone").onchange = e => {
+  tz = e.target.value;
+};
+
+/* THEME */
+function toggleTheme() {
+  document.body.classList.toggle("light");
+}
+
+/* STOPWATCH */
+let swInterval, swTime = 0;
+
+function startSW() {
+  swInterval = setInterval(() => {
+    swTime++;
+    updateSW();
+  }, 1000);
+}
+
+function stopSW() {
+  clearInterval(swInterval);
+}
+
+function resetSW() {
+  swTime = 0;
+  updateSW();
+}
+
+function updateSW() {
+  let h = String(Math.floor(swTime / 3600)).padStart(2,'0');
+  let m = String(Math.floor((swTime % 3600)/60)).padStart(2,'0');
+  let s = String(swTime % 60).padStart(2,'0');
+  document.getElementById("stopwatch").innerText = `${h}:${m}:${s}`;
+}
+
+/* TIMER */
+let timerInt;
+
+function startTimer() {
+  let t = parseInt(document.getElementById("timerInput").value);
+  clearInterval(timerInt);
+
+  timerInt = setInterval(() => {
+    if (t <= 0) {
+      clearInterval(timerInt);
+      alert("Time's up!");
+    }
+    document.getElementById("timerDisplay").innerText = t + "s";
+    t--;
+  }, 1000);
+}
+
+/* SOUND */
+function tickSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  osc.frequency.value = 800;
+  osc.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.02);
+}
+</script>
+
+</body>
+</html>
